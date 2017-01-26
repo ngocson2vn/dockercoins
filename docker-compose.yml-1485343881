@@ -1,32 +1,32 @@
 hasher:
-  image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_hasher:1485343881
   cpu_shares: 10
+  image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_hasher:1485343881
   mem_limit: 134217728
   ports:
-    - 8002:80
+  - 8002:80
 redis:
-  image: redis
   cpu_shares: 10
+  image: redis
   mem_limit: 134217728
 rng:
+  cpu_shares: 10
   image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_rng:1485343881
-  cpu_shares: 10
   mem_limit: 134217728
   ports:
-    - 8001:80
+  - 8001:80
 webui:
-  image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_webui:1485343881
   cpu_shares: 10
-  mem_limit: 134217728
+  image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_webui:1485343881
   links:
-    - redis
+  - redis
+  mem_limit: 134217728
   ports:
-    - 8000:80
-#worker:
-#  image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_worker:1485343881
-#  cpu_shares: 10
-#  mem_limit: 134217728
-#  links:
-#    - rng
-#    - hasher
-#    - redis
+  - 8000:80
+worker:
+  cpu_shares: 10
+  image: 719077361224.dkr.ecr.ap-northeast-1.amazonaws.com/dockercoins_worker:1485343881
+  links:
+  - rng
+  - hasher
+  - redis
+  mem_limit: 134217728

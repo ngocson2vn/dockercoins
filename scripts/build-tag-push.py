@@ -2,8 +2,13 @@
 
 from common import ComposeFile
 import os
+import sys
 import subprocess
 import time
+
+ignore = "0"
+if len(sys.argv) == 2:
+    ignore = sys.argv[1]
 
 registry = os.environ.get("DOCKER_REGISTRY")
 
@@ -33,24 +38,35 @@ compose_file = ComposeFile("docker-compose.yml")
 # Tag them, and initiate a push in the background.
 push_operations = dict()
 for service_name, service in compose_file.services.items():
+    service["cpu_shares"] = 10
+    service["mem_limit"] = 134217728
+
+    if "volumes" in service:
+	del service["volumes"] 
+
     if "build" in service:
         compose_image = "{}_{}".format(project_name, service_name)
         registry_image = "{}/{}:{}".format(registry, compose_image, version)
-        # Re-tag the image so that it can be uploaded to the registry.
-        subprocess.check_call(["docker", "tag", compose_image, registry_image])
-	subprocess.check_call(["aws", "ecr", "create-repository", "--repository-name", compose_image])
-        # Spawn "docker push" to upload the image.
-        push_operations[service_name] = subprocess.Popen(["docker", "push", registry_image])
-        # Replace the "build" definition by an "image" definition,
+        
+        if ignore == "0":
+		# Re-tag the image so that it can be uploaded to the registry.
+		subprocess.check_call(["docker", "tag", compose_image, registry_image])
+		subprocess.check_call(["aws", "ecr", "create-repository", "--repository-name", compose_image])
+		
+		# Spawn "docker push" to upload the image.
+		push_operations[service_name] = subprocess.Popen(["docker", "push", registry_image])
+        
+	# Replace the "build" definition by an "image" definition,
         # using the name of the image on the registry.
         del service["build"]
-        service["image"] = registry_image
+	service["image"] = registry_image
 
 # Wait for push operations to complete.
-for service_name, popen_object in push_operations.items():
-    print("Waiting for {} push to complete...".format(service_name))
-    popen_object.wait()
-    print("Done.")
+if ignore == "0":
+	for service_name, popen_object in push_operations.items():
+	    print("Waiting for {} push to complete...".format(service_name))
+	    popen_object.wait()
+	    print("Done.")
 
 # Write the new docker-compose.yml file.
 if "COMPOSE_FILE" not in os.environ:
